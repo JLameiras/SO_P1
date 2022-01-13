@@ -111,8 +111,7 @@ int inode_create(inode_type n_type) {
                 }
 
                 inode_table[inumber].i_size = BLOCK_SIZE;
-                inode_table[inumber].i_data_block = b;  // FIXME -> alteracoes necessarias depois de alterar inode
-                // More specifically, initialize first array element to b and all others to -1
+                inode_table[inumber].i_data_block[0] = b;
 
                 dir_entry_t *dir_entry = (dir_entry_t *)data_block_get(b);
                 if (dir_entry == NULL) {
@@ -126,9 +125,12 @@ int inode_create(inode_type n_type) {
             } else {
                 /* In case of a new file, simply sets its size to 0 */
                 inode_table[inumber].i_size = 0;
-                inode_table[inumber].i_data_block = -1; // FIXME -> alteracoes necessarias depois de alterar inode
-                // More specifically, initialize all array elements to -1
+                inode_table[inumber].i_data_block[0] = -1;
             }
+            // Initialize remaining data blocks to -1
+            for(int i = 1; i < 10; i++)
+                inode_table[inumber].i_data_block[i] = -1;
+            inode_table[inumber].supp_block = -1;
             return inumber;
         }
     }
@@ -153,8 +155,25 @@ int inode_delete(int inumber) {
     freeinode_ts[inumber] = FREE;
 
     if (inode_table[inumber].i_size > 0) {
-        if (data_block_free(inode_table[inumber].i_data_block) == -1) { // FIXME -> alteracoes necessarias depois de alterar inode
+        if(inode_table[inumber].i_node_type == T_DIRECTORY && data_block_free(inode_table[inumber].i_data_block[0]) == -1)
             return -1;
+        else{
+            // Iterate through and free taken blocks
+            for(int i = 0; i < 10; i++)
+                if(inode_table[inumber].i_data_block[i] != -1 && data_block_free(inode_table[inumber].i_data_block[i]) == -1)
+                    return -1;
+            if(inode_table[inumber].supp_block != -1) {
+                // Iterate through supplementary block's content
+                // 1 - Get pointer to beginning of supp block
+                int *file_blocks = (int *)data_block_get(inode_table[inumber].supp_block);
+                // 2 - Loop through supp block entries and check for taken blocks, freeing them
+                for(int index = 0; index < BLOCK_SIZE; index += sizeof(int))
+                    if(*(file_blocks + index) != -1 && data_block_free(*(file_blocks + index)) == -1)
+                        return -1;
+                    // 3 - Free supp block
+                if (data_block_free(inode_table[inumber].supp_block) == -1) // Free supplementary block
+                    return -1;
+            }
         }
     }
 
