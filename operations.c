@@ -26,6 +26,7 @@ static bool valid_pathname(char const *name) {
     /*Each name has to be checked
      * Suggestion: splice string by character '/' and check if name is valid by traversing the file system according to
      * the given path */
+    for(int i = 1; i < strlen(name); i++) if(name[i] == '/') return false;
     return name != NULL && strlen(name) > 1 && name[0] == '/';
 }
 
