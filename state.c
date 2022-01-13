@@ -200,7 +200,7 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
 
     /* Locates the block containing the directory's entries */
     dir_entry_t *dir_entry =
-        (dir_entry_t *)data_block_get(inode_table[inumber].i_data_block); // FIXME -> alteracoes necessarias depois de alterar inode
+        (dir_entry_t *)data_block_get(inode_table[inumber].i_data_block[0]);
     if (dir_entry == NULL) {
         return -1;
     }
@@ -296,7 +296,7 @@ int data_block_free(int block_number) {
  * 	- Block's index
  * Returns: pointer to the first byte of the block, NULL otherwise
  */
-void *data_block_get(int block_number) {
+void * data_block_get(int block_number) {
     if (!valid_block_number(block_number)) {
         return NULL;
     }
