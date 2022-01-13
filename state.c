@@ -258,15 +258,6 @@ int find_in_dir(int inumber, char const *sub_name) {
         return -1;
     }
 
-    // FIXME -> alteracoes necessarias depois de alterar inode
-    //Specifically, it has to iterate through the various possible data blocks where the directory stores its data
-    /* Instead of a single int denoting the data block there could be multiple ints
-     * Get i_size of directories i_node proceed to obtain block number by dividing it by BLOCK_SIZE
-     * Create array blocks of size i_size / BLOCK_SIZE
-     * Iterate through directories i_node and insert block numbers into the array of blocks
-     * Instead of locating only one block, iterate through the array obtaining the corresponding blocks and execute
-     * the algorithm for each of the blocks until a match is found or the end of the last block is reached */
-
     /* Locates the block containing the directory's entries */
     dir_entry_t *dir_entry =
         (dir_entry_t *)data_block_get(inode_table[inumber].i_data_block[0]);

@@ -147,6 +147,9 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
                 written += block_write;
                 file->of_offset += block_write;
             }
+            if (file->of_offset > inode->i_size) {
+                inode->i_size = file->of_offset;
+            }
             current_block = 10;
         }
 
