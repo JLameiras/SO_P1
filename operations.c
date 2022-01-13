@@ -124,42 +124,62 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         return -1;
     }
 
-    /* Determine how many bytes to write */
-    if (to_write + file->of_offset > BLOCK_SIZE) {
-        to_write = BLOCK_SIZE - file->of_offset;
-    }
-
-    // FIXME -> alteracoes necessarias depois de alterar inode
-    /* Copying the contents of buffer unto file may require writing in multiple blocks. Suggestion:
-     * Write contents of buffer until current block is full then proceed to repeat the steps of creating a buffer and
-     * writing in that buffer until all content is written.
-     * to_write must not be tampered with, it stores the functions output
-     * create variable that stores amount of data written and variable that stores amount of data to write in an
-     * iteration */
+    int written = 0;
+    int block_dif = 0;
+    int block_write = 0;
 
     if (to_write > 0) {
-        if (inode->i_size == 0) {
-            /* If empty file, allocate new block */
-            inode->i_data_block = data_block_alloc();
+        int current_block = file->of_offset / BLOCK_SIZE;
+
+        if(current_block < 10) {
+            for(int i = current_block; i < 10 && to_write != written; i++) {
+                // Check if block exists, if not create one. Get block content pointer
+                if(inode->i_data_block[i] == -1)
+                    inode->i_data_block[i] = data_block_alloc();
+                void *block = data_block_get(inode->i_data_block[i]);
+                // Check if block pointer is valid
+                if(block == NULL)
+                    return -1;
+                // Get amount of chars to write onto block
+                block_dif = BLOCK_SIZE - file->of_offset % BLOCK_SIZE;;
+                block_write = block_dif > to_write - written ? to_write - written : block_dif;
+                // Write onto block and update state
+                memcpy(block + file->of_offset % BLOCK_SIZE, buffer, block_write);
+                written += block_write;
+                file->of_offset += block_write;
+            }
+            current_block = 10;
         }
 
-        void *block = data_block_get(inode->i_data_block);
-        if (block == NULL) {
-            return -1;
+        if(to_write != written){
+            int *block_content = (int *) data_block_get(inode->supp_block);
+            if(block_content == NULL) // Check content pointer
+                return -1;
+            int begin = current_block - 10;
+            for(int i = begin * sizeof(int); i < BLOCK_SIZE && to_write != written; i += sizeof(int)) {
+                // Check if block exists, if not create one. Get pointer to block content
+                if(*(block_content + i) == -1)
+                    *(block_content + i) = data_block_alloc();
+                void *block = data_block_get(*(block_content + i));
+                // Check if block pointer is valid
+                if (block == NULL) {
+                    return -1;
+                }
+                // Get amount of chars to write onto block
+                block_dif = BLOCK_SIZE - file->of_offset % BLOCK_SIZE;
+                block_write = block_dif > to_write - written ? to_write - written : block_dif;
+                /* Perform the actual write */
+                memcpy(block + file->of_offset % BLOCK_SIZE, buffer, block_write);
+                /* Update state*/
+                file->of_offset += block_write;
+                written += block_write;
+            }
         }
-
-        /* Perform the actual write */
-        memcpy(block + file->of_offset, buffer, to_write);
-
-        /* The offset associated with the file handle is
-         * incremented accordingly */
-        file->of_offset += to_write;
         if (file->of_offset > inode->i_size) {
             inode->i_size = file->of_offset;
         }
     }
-
-    return (ssize_t)to_write;
+    return (ssize_t)written;
 }
 
 

@@ -112,6 +112,7 @@ int inode_create(inode_type n_type) {
 
                 inode_table[inumber].i_size = BLOCK_SIZE;
                 inode_table[inumber].i_data_block[0] = b;
+                inode_table[inumber].supp_block = -1;
 
                 dir_entry_t *dir_entry = (dir_entry_t *)data_block_get(b);
                 if (dir_entry == NULL) {
@@ -126,11 +127,18 @@ int inode_create(inode_type n_type) {
                 /* In case of a new file, simply sets its size to 0 */
                 inode_table[inumber].i_size = 0;
                 inode_table[inumber].i_data_block[0] = -1;
+                inode_table[inumber].supp_block = data_block_alloc();
+                int *file_blocks = (int *)data_block_get(inode_table[inumber].supp_block);
+                if(file_blocks == NULL) {
+                    freeinode_ts[inumber] = FREE;
+                    return -1;
+                }
+                for(int index = 0; index < BLOCK_SIZE; index += sizeof(int))
+                    *(file_blocks + index) = -1;
             }
             // Initialize remaining data blocks to -1
             for(int i = 1; i < 10; i++)
                 inode_table[inumber].i_data_block[i] = -1;
-            inode_table[inumber].supp_block = -1;
             return inumber;
         }
     }
