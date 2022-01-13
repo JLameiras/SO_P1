@@ -181,19 +181,32 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         to_read = len;
     }
 
-    if (to_read > 0) {
-        // FIXME -> alteracoes necessarias depois de alterar inode
-        /* Determining the block in which the data is stored is non trivial */
-        void *block = data_block_get(inode->i_data_block);
-        if (block == NULL) {
-            return -1;
-        }
+    int read = 0;
+    int block_dif = 0;
+    int block_read = 0;
 
-        /* Perform the actual read */
-        memcpy(buffer, block + file->of_offset, to_read);
-        /* The offset associated with the file handle is
-         * incremented accordingly */
-        file->of_offset += to_read;
+    if (to_read > 0) {
+        /* Determining the block in which the data is stored is non trivial */
+        for(int i = (int)file->of_offset / BLOCK_SIZE; i < 10 && to_read != read; i++) {
+            void *block = data_block_get(inode->i_data_block[i]);
+            if (block == NULL) {
+                return -1;
+            }
+
+            block_dif = BLOCK_SIZE - (int)file->of_offset % BLOCK_SIZE;
+            block_read = block_dif > (int)to_read - read ? (int)to_read - read : block_dif;
+
+            /* Perform the actual read */
+            memcpy(buffer, block + file->of_offset % BLOCK_SIZE, block_read);
+
+            /* The offset associated with the file handle is
+            * incremented accordingly */
+            file->of_offset += block_read;
+            read += block_read;
+        }
+        if(to_read != read){
+
+        }
     }
 
     return (ssize_t)to_read;
