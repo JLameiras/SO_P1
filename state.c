@@ -111,7 +111,8 @@ int inode_create(inode_type n_type) {
                 }
 
                 inode_table[inumber].i_size = BLOCK_SIZE;
-                inode_table[inumber].i_data_block = b;
+                inode_table[inumber].i_data_block = b;  // FIXME -> alteracoes necessarias depois de alterar inode
+                // More specifically, initialize first array element to b and all others to -1
 
                 dir_entry_t *dir_entry = (dir_entry_t *)data_block_get(b);
                 if (dir_entry == NULL) {
@@ -125,7 +126,8 @@ int inode_create(inode_type n_type) {
             } else {
                 /* In case of a new file, simply sets its size to 0 */
                 inode_table[inumber].i_size = 0;
-                inode_table[inumber].i_data_block = -1;
+                inode_table[inumber].i_data_block = -1; // FIXME -> alteracoes necessarias depois de alterar inode
+                // More specifically, initialize all array elements to -1
             }
             return inumber;
         }
@@ -151,7 +153,7 @@ int inode_delete(int inumber) {
     freeinode_ts[inumber] = FREE;
 
     if (inode_table[inumber].i_size > 0) {
-        if (data_block_free(inode_table[inumber].i_data_block) == -1) {
+        if (data_block_free(inode_table[inumber].i_data_block) == -1) { // FIXME -> alteracoes necessarias depois de alterar inode
             return -1;
         }
     }
@@ -198,7 +200,7 @@ int add_dir_entry(int inumber, int sub_inumber, char const *sub_name) {
 
     /* Locates the block containing the directory's entries */
     dir_entry_t *dir_entry =
-        (dir_entry_t *)data_block_get(inode_table[inumber].i_data_block);
+        (dir_entry_t *)data_block_get(inode_table[inumber].i_data_block); // FIXME -> alteracoes necessarias depois de alterar inode
     if (dir_entry == NULL) {
         return -1;
     }
@@ -228,6 +230,15 @@ int find_in_dir(int inumber, char const *sub_name) {
         inode_table[inumber].i_node_type != T_DIRECTORY) {
         return -1;
     }
+
+    // FIXME -> alteracoes necessarias depois de alterar inode
+    //Specifically, it has to iterate through the various possible data blocks where the directory stores its data
+    /* Instead of a single int denoting the data block there could be multiple ints
+     * Get i_size of directories i_node proceed to obtain block number by dividing it by BLOCK_SIZE
+     * Create array blocks of size i_size / BLOCK_SIZE
+     * Iterate through directories i_node and insert block numbers into the array of blocks
+     * Instead of locating only one block, iterate through the array obtaining the corresponding blocks and execute
+     * the algorithm for each of the blocks until a match is found or the end of the last block is reached */
 
     /* Locates the block containing the directory's entries */
     dir_entry_t *dir_entry =

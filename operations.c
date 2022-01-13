@@ -22,11 +22,15 @@ int tfs_destroy() {
 }
 
 static bool valid_pathname(char const *name) {
+    // FIXME -> alteracoes necessarias depois de alterar inode
+    /*Each name has to be checked
+     * Suggestion: splice string by character '/' and check if name is valid by traversing the file system according to
+     * the given path */
     return name != NULL && strlen(name) > 1 && name[0] == '/';
 }
 
 
-int tfs_lookup(char const *name) {
+int tfs_lookup(char const *name) { // FIXME -> alteracoes necessarias depois de alterar inode
     if (!valid_pathname(name)) {
         return -1;
     }
@@ -56,7 +60,7 @@ int tfs_open(char const *name, int flags) {
 
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
-            if (inode->i_size > 0) {
+            if (inode->i_size > 0) { // FIXME -> alteracoes necessarias depois de alterar inode (Has to free all blocks)
                 if (data_block_free(inode->i_data_block) == -1) {
                     return -1;
                 }
@@ -115,6 +119,14 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         to_write = BLOCK_SIZE - file->of_offset;
     }
 
+    // FIXME -> alteracoes necessarias depois de alterar inode
+    /* Copying the contents of buffer unto file may require writing in multiple blocks. Suggestion:
+     * Write contents of buffer until current block is full then proceed to repeat the steps of creating a buffer and
+     * writing in that buffer until all content is written.
+     * to_write must not be tampered with, it stores the functions output
+     * create variable that stores amount of data written and variable that stores amount of data to write in an
+     * iteration */
+
     if (to_write > 0) {
         if (inode->i_size == 0) {
             /* If empty file, allocate new block */
@@ -160,6 +172,8 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     }
 
     if (to_read > 0) {
+        // FIXME -> alteracoes necessarias depois de alterar inode
+        /* Determining the block in which the data is stored is non trivial */
         void *block = data_block_get(inode->i_data_block);
         if (block == NULL) {
             return -1;
