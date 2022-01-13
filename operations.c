@@ -255,10 +255,21 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     int inumb;
     if((inumb = tfs_lookup(source_path)) == -1 || inumb == 0)
         return -1;
+    inode_t *inode = inode_get(inumb);
+    void *buffer = malloc((int)inode->i_size);
+    int fhandle = add_to_open_file_table(inumb, 0);
+    tfs_read(fhandle, buffer, (int)inode->i_size);
+
     // Open destination file
     FILE *file = fopen(dest_path, "w");
     if(file == NULL )
         return -1;
+
+    memcpy(file, buffer, (int)inode->i_size);
+
+    remove_from_open_file_table(fhandle);
+    fclose(file);
+    free(buffer);
 
     return 0;
 }
