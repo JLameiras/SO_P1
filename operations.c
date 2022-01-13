@@ -73,7 +73,6 @@ int tfs_open(char const *name, int flags) {
                     if(data_block_free((inode->supp_block)) == -1)
                         return -1;
                 }
-
                 inode->i_size = 0;
             }
         }
@@ -202,8 +201,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     }
 
     int read = 0;
-    int block_dif = 0;
-    int block_read = 0;
+    int block_dif, block_read;
 
     if (to_read > 0) {
         /* Determining the block in which the data is stored is non trivial */
@@ -214,10 +212,10 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             }
 
             block_dif = BLOCK_SIZE - file->of_offset % BLOCK_SIZE;
-            block_read = block_dif > to_read - read ? to_read - read : block_dif;
+            block_read = block_dif > ((int)to_read - read) ? ((int)to_read - read) : block_dif;
 
             /* Perform the actual read */
-            memcpy(buffer, block + file->of_offset % BLOCK_SIZE, block_read);
+            memcpy(buffer, block + (file->of_offset % BLOCK_SIZE), block_read);
 
             /* The offset associated with the file handle is
             * incremented accordingly */
@@ -226,7 +224,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         }
         if(to_read != read){
             int *block_content = (int *) data_block_get(inode->supp_block);
-            int begin = file->of_offset / BLOCK_SIZE - 10;
+            int begin = (int)file->of_offset / BLOCK_SIZE - 10;
             for(int i = begin * sizeof(int); i < BLOCK_SIZE && to_read != read; i += sizeof(int)) {
                 void *block = data_block_get(*(block_content + i));
                 if (block == NULL) {
@@ -234,10 +232,10 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
                 }
 
                 block_dif = BLOCK_SIZE - file->of_offset % BLOCK_SIZE;
-                block_read = block_dif > to_read - read ? to_read - read : block_dif;
+                block_read = block_dif > ((int)to_read - read) ? ((int)to_read - read) : block_dif;
 
                 /* Perform the actual read */
-                memcpy(buffer, block + file->of_offset % BLOCK_SIZE, block_read);
+                memcpy(buffer, block + (file->of_offset % BLOCK_SIZE), block_read);
 
                 /* The offset associated with the file handle is
                 * incremented accordingly */
@@ -246,7 +244,6 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             }
         }
     }
-
     return (ssize_t)read;
 }
 
