@@ -61,10 +61,19 @@ int tfs_open(char const *name, int flags) {
 
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
-            if (inode->i_size > 0) { // FIXME -> alteracoes necessarias depois de alterar inode (Has to free all blocks)
-                if (data_block_free(inode->i_data_block) == -1) {
-                    return -1;
+            if (inode->i_size > 0) {
+                for(int i = 0; i < 10; i++)
+                    if(inode->i_data_block[i] != -1 && data_block_free(inode->i_data_block[i]) == -1)
+                        return -1;
+                int *blocks;
+                if((blocks = (int*)data_block_get(inode->supp_block)) != NULL) {
+                    for (int i = 0; i < BLOCK_SIZE; i += sizeof(int))
+                        if (*(blocks + i) != -1 && data_block_free(*(blocks + i)) == -1)
+                            return -1;
+                    if(data_block_free((inode->supp_block)) == -1)
+                        return -1;
                 }
+
                 inode->i_size = 0;
             }
         }
@@ -188,4 +197,17 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     }
 
     return (ssize_t)to_read;
+}
+
+int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
+    // Get file in TFS
+    int inumb;
+    if((inumb = tfs_lookup(source_path)) == -1 || inumb == 0)
+        return -1;
+    // Open destination file
+    FILE *file = fopen(dest_path, "w");
+    if(file == NULL )
+        return -1;
+
+    return 0;
 }
