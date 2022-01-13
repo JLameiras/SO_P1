@@ -193,8 +193,8 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
                 return -1;
             }
 
-            block_dif = BLOCK_SIZE - (int)file->of_offset % BLOCK_SIZE;
-            block_read = block_dif > (int)to_read - read ? (int)to_read - read : block_dif;
+            block_dif = BLOCK_SIZE - file->of_offset % BLOCK_SIZE;
+            block_read = block_dif > to_read - read ? to_read - read : block_dif;
 
             /* Perform the actual read */
             memcpy(buffer, block + file->of_offset % BLOCK_SIZE, block_read);
@@ -205,11 +205,29 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
             read += block_read;
         }
         if(to_read != read){
+            int *block_content = (int *) data_block_get(inode->supp_block);
+            int begin = file->of_offset / BLOCK_SIZE - 10;
+            for(int i = begin * sizeof(int); i < BLOCK_SIZE && to_read != read; i += sizeof(int)) {
+                void *block = data_block_get(*(block_content + i));
+                if (block == NULL) {
+                    return -1;
+                }
 
+                block_dif = BLOCK_SIZE - file->of_offset % BLOCK_SIZE;
+                block_read = block_dif > to_read - read ? to_read - read : block_dif;
+
+                /* Perform the actual read */
+                memcpy(buffer, block + file->of_offset % BLOCK_SIZE, block_read);
+
+                /* The offset associated with the file handle is
+                * incremented accordingly */
+                file->of_offset += block_read;
+                read += block_read;
+            }
         }
     }
 
-    return (ssize_t)to_read;
+    return (ssize_t)read;
 }
 
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
