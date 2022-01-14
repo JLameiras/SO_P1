@@ -256,7 +256,7 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     if((inumb = tfs_lookup(source_path)) == -1 || inumb == 0)
         return -1;
     inode_t *inode = inode_get(inumb);
-    void *buffer = malloc((int)inode->i_size);
+    char *buffer = (char*)malloc((int)inode->i_size * sizeof (char));
     int fhandle = add_to_open_file_table(inumb, 0);
     tfs_read(fhandle, buffer, (int)inode->i_size);
 
@@ -265,7 +265,7 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path) {
     if(file == NULL )
         return -1;
 
-    memcpy(file, buffer, (int)inode->i_size);
+    fprintf(file, buffer, (int)inode->i_size * sizeof(char) );
 
     remove_from_open_file_table(fhandle);
     fclose(file);
