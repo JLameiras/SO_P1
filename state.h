@@ -26,6 +26,7 @@ typedef struct {
     size_t i_size;
     int i_data_block[10];
     int supp_block;
+    pthread_mutex_t mutex;
     pthread_rwlock_t rwlock;
     /* in a real FS, more fields would exist here */
 } inode_t;
@@ -39,6 +40,7 @@ typedef struct {
     int of_inumber;
     size_t of_offset;
     pthread_mutex_t mutex;
+    pthread_rwlock_t rwlock;
 } open_file_entry_t;
 
 #define MAX_DIR_ENTRIES (BLOCK_SIZE / sizeof(dir_entry_t))
